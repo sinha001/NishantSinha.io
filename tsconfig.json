@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",                        // ✅ Recommended for modern projects
     "module": "ESNext",                        // ✅ For Vite + ESM compatibility
-    "moduleResolution": "Node",                // ✅ Required for path aliases and proper module detection
+    "moduleResolution": "bundler",                // ✅ Required for path aliases and proper module detection
     "jsx": "react-jsx",                        // ✅ For React 17+ (no need to import React in every file)
     "esModuleInterop": true,                   // ✅ Fixes your import issue
     "allowSyntheticDefaultImports": true,      // ✅ Allows default imports from modules without a default export
