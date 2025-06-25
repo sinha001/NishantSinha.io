@@ -31,7 +31,7 @@ import type { Project } from "@/data/projects"
 import type { SkillCategory } from "@/data/skills"
 import type { Education, Certification } from "@/data/education"
 import type { Repository } from "@/data/github"
-import type { BlogPost } from "@/data/blog"
+import type { BlogPost } from "@/data/blogs"
 
 export default function AdminPortfolio() {
   const {
