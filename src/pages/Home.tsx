@@ -1,7 +1,7 @@
 "use client"
 
-import type React from "react" 
-import { useRef } from "react"
+import type React from "react"
+import { useRef, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,18 +17,17 @@ import {
   Calendar,
   Building,
   GraduationCap,
+  Download,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { motion, useInView } from "framer-motion"
 import { ContactForm } from "@/components/ContactForm"
+import { MobileNav } from "@/components/MobileNav"
+import { useAnalytics } from "@/contexts/AnalyticsContext"
+import { usePortfolio } from "@/contexts/PortfolioContext"
+import { BackgroundBeams } from "@/components/ui/background-beams"
 
-// Import data
-import { personalInfo } from "@/data/personal"
-import { experiences } from "@/data/experience"
-import { education, certifications } from "@/data/education"
-import { skillCategories } from "@/data/skills"
-import { projects } from "@/data/projects"
-import { repositories } from "@/data/github"
+// Import static data that doesn't change via admin
 import { contactOptions } from "@/data/contact"
 
 // Animation variants
@@ -71,6 +70,30 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 }
 
 export default function Home() {
+  const { trackPageView, trackResumeDownload } = useAnalytics()
+  const { personalInfo, experiences, projects, skillCategories, education, certifications, repositories, resumeFile } =
+    usePortfolio()
+
+  useEffect(() => {
+    trackPageView("/")
+  }, [])
+
+  const handleResumeDownload = () => {
+    trackResumeDownload()
+    if (resumeFile) {
+      const link = document.createElement("a")
+      link.href = resumeFile
+      link.download = "Nishant-Sinha-Resume.pdf"
+      link.click()
+    } else {
+      // Fallback for demo
+      const link = document.createElement("a")
+      link.href = "/resume-nishant-sinha.pdf"
+      link.download = "Nishant-Sinha-Resume.pdf"
+      link.click()
+    }
+  }
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
     if (element) {
@@ -88,6 +111,8 @@ export default function Home() {
         className="flex items-center justify-between p-6 max-w-7xl mx-auto"
       >
         <div className="text-2xl font-bold text-slate-800">{personalInfo.name}</div>
+
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
           <button
             onClick={() => scrollToSection("home")}
@@ -135,113 +160,132 @@ export default function Home() {
             Blog
           </Link>
         </div>
+
+        {/* Mobile Navigation */}
+        <MobileNav personalInfo={personalInfo} />
       </motion.nav>
 
       {/* Hero Section */}
-      <section id="home" className="flex flex-col items-center justify-center min-h-[80vh] px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Badge variant="outline" className="mb-8 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-            <span className="mr-2">⚡</span>
-            {personalInfo.tagline}
-          </Badge>
-        </motion.div>
+      <section
+        id="home"
+        className="relative flex flex-col items-center justify-center min-h-[80vh] px-6 text-center overflow-hidden"
+      >
+        {/* Background Beams */}
+        <BackgroundBeams />
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-5xl md:text-7xl font-bold mb-6 text-slate-800"
-        >
-          {personalInfo.title.split(" ")[0]} {personalInfo.title.split(" ")[1]}{" "}
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            {personalInfo.title.split(" ")[2]}
-          </span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-xl text-slate-600 mb-8 max-w-2xl leading-relaxed"
-        >
-          {personalInfo.description}
-        </motion.p>
-
-        {/* Tech Stack */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="flex flex-wrap gap-3 mb-8 justify-center"
-        >
-          {personalInfo.techStack.map((tech, index) => (
-            <motion.div
-              key={tech}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
+        {/* Content */}
+        <div className="relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <Button
+              variant="outline"
+              onClick={handleResumeDownload}
+              className="mb-8 bg-blue-50/80 backdrop-blur-sm text-blue-700 border-blue-200 hover:bg-blue-100/80"
             >
-              <Badge variant="secondary" className="bg-slate-100 text-slate-700 hover:bg-slate-200">
-                {tech}
-              </Badge>
-            </motion.div>
-          ))}
-        </motion.div>
+              <Download className="mr-2 h-4 w-4" />
+              Download Resume
+            </Button>
+          </motion.div>
 
-        {/* CTA Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-          className="flex gap-4 mb-12"
-        >
-          <Button
-            size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => scrollToSection("projects")}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-5xl md:text-7xl font-bold mb-6 text-slate-800"
           >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            View Projects
-          </Button>
-          <Button
-            variant="outline"
-            size="lg"
-            className="bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
-            onClick={() => scrollToSection("contact")}
-          >
-            <Mail className="mr-2 h-4 w-4" />
-            Contact Me
-          </Button>
-        </motion.div>
+            {personalInfo.title.split(" ")[0]} {personalInfo.title.split(" ")[1]}{" "}
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {personalInfo.title.split(" ")[2]}
+            </span>
+          </motion.h1>
 
-        {/* Social Links */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.2 }}
-          className="flex gap-4"
-        >
-          {[
-            { href: personalInfo.social.github, icon: Github },
-            { href: personalInfo.social.linkedin, icon: Linkedin },
-            { href: `mailto:${personalInfo.email}`, icon: Mail },
-          ].map(({ href, icon: Icon }, index) => (
-            <motion.div key={href} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow text-slate-600 hover:text-slate-800"
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="text-xl text-slate-600 mb-8 max-w-2xl leading-relaxed"
+          >
+            {personalInfo.description}
+          </motion.p>
+
+          {/* Tech Stack */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="flex flex-wrap gap-3 mb-8 justify-center"
+          >
+            {personalInfo.techStack.map((tech, index) => (
+              <motion.div
+                key={tech}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
               >
-                <Icon className="h-5 w-5" />
-              </a>
-            </motion.div>
-          ))}
-        </motion.div>
+                <Badge
+                  variant="secondary"
+                  className="bg-slate-100/80 backdrop-blur-sm text-slate-700 hover:bg-slate-200/80"
+                >
+                  {tech}
+                </Badge>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.0 }}
+            className="flex flex-col sm:flex-row gap-4 mb-12 justify-center items-center"
+          >
+            <Button
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white backdrop-blur-sm w-full sm:w-auto"
+              onClick={() => scrollToSection("projects")}
+            >
+              <ExternalLink className="mr-2 h-4 w-4" />
+              View Projects
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="bg-white/80 backdrop-blur-sm text-slate-700 border-slate-300 hover:bg-slate-50/80 w-full sm:w-auto"
+              onClick={() => scrollToSection("contact")}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Contact Me
+            </Button>
+          </motion.div>
+
+          {/* Social Links */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.2 }}
+            className="flex gap-3 justify-center items-center"
+          >
+            {[
+              { href: personalInfo.social.github, icon: Github },
+              { href: personalInfo.social.linkedin, icon: Linkedin },
+              { href: `mailto:${personalInfo.email}`, icon: Mail },
+            ].map(({ href, icon: Icon }, index) => (
+              <motion.div key={href} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-12 h-12 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all duration-200 text-slate-600 hover:text-slate-800"
+                >
+                  <Icon className="h-5 w-5" />
+                </a>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </section>
 
       {/* About Section */}
@@ -376,7 +420,7 @@ export default function Home() {
             <div className="max-w-4xl mx-auto">
               {education.map((edu) => (
                 <motion.div key={edu.id} variants={fadeInUp}>
-                  <Card className="bg-white shadow-lg border-slate-200">
+                  <Card className="bg-white shadow-lg border-slate-200 mb-8">
                     <CardContent className="p-8">
                       <div className="flex items-start gap-6">
                         <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
@@ -412,21 +456,25 @@ export default function Home() {
               ))}
 
               {/* Achievements */}
-              <motion.div variants={fadeInUp} className="mt-8">
+              <motion.div variants={fadeInUp}>
                 <Card className="bg-white shadow-lg border-slate-200">
                   <CardContent className="p-6">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">Achievements & Certifications</h4>
-                    {certifications.map((cert) => (
-                      <div key={cert.id} className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                        <span className="text-slate-600">{cert.name}</span>
-                        {cert.link && (
-                          <a href={cert.link} className="text-blue-600 hover:text-blue-700 text-sm">
-                            View Certificate →
-                          </a>
-                        )}
-                      </div>
-                    ))}
+                    <div className="space-y-3">
+                      {certifications.map((cert) => (
+                        <div key={cert.id} className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                          <span className="text-slate-600">
+                            {cert.name} - {cert.issuer}
+                          </span>
+                          {cert.link && (
+                            <a href={cert.link} className="text-blue-600 hover:text-blue-700 text-sm">
+                              View Certificate →
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -444,17 +492,16 @@ export default function Home() {
               <p className="text-slate-600">Technologies I work with to bring ideas to life</p>
             </div>
 
-            <motion.div variants={staggerContainer} className="grid md:grid-cols-4 gap-8">
+            <motion.div
+              variants={staggerContainer}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
+            >
               {skillCategories.map((category) => (
-                <motion.div key={category.id} variants={fadeInUp}>
+                <motion.div key={category.id} variants={fadeInUp} className="text-center">
                   <h3 className="text-lg font-semibold text-slate-800 mb-4">{category.name}</h3>
-                  <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 justify-center">
                     {category.skills.map((skill) => (
-                      <Badge
-                        key={skill}
-                        variant="outline"
-                        className="bg-slate-50 text-slate-700 border-slate-200 block w-fit"
-                      >
+                      <Badge key={skill} variant="outline" className="bg-slate-50 text-slate-700 border-slate-200">
                         {skill}
                       </Badge>
                     ))}
@@ -609,21 +656,21 @@ export default function Home() {
 
                   <div className="mt-8">
                     <h4 className="text-lg font-semibold text-slate-800 mb-4">Let's Connect</h4>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
                       {[
                         { href: personalInfo.social.github, icon: Github, label: "GitHub" },
                         { href: personalInfo.social.linkedin, icon: Linkedin, label: "LinkedIn" },
                         { href: `mailto:${personalInfo.email}`, icon: Mail, label: "Email" },
                       ].map(({ href, icon: Icon, label }) => (
-                        <motion.div key={href} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                        <motion.div key={href} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           <a
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-3 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors text-slate-600 hover:text-slate-800"
+                            className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors text-slate-600 hover:text-slate-800"
                             title={label}
                           >
-                            <Icon className="h-6 w-6" />
+                            <Icon className="h-5 w-5" />
                           </a>
                         </motion.div>
                       ))}

@@ -9,7 +9,7 @@ export const personalInfo = {
     social: {
       github: "https://github.com/sinha001",
       linkedin: "https://linkedin.com/in/nishant-sinha-37360917b",
-      medium: "https://medium.com/@your-medium-username"
+      medium: "https://medium.com/@nishantsinha_4248"
     },
     techStack: ["Java", "Vue.js", "React.js", "Node.js", "Make.com", "MongoDB"],
     stats: {
