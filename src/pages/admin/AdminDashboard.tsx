@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAnalytics } from "@/contexts/AnalyticsContext"
@@ -18,14 +18,35 @@ import {
   FileText,
   MessageSquare,
   TrendingUp,
+  Clock,
 } from "lucide-react"
+
+interface Contact {
+  id: string
+  name: string
+  email: string
+  company?: string
+  role?: string
+  subject: string
+  message: string
+  selectedTech: string[]
+  timestamp: Date
+  status: string
+  priority: string
+  read: boolean
+}
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth()
   const { analytics, trackPageView } = useAnalytics()
+  const [recentContacts, setRecentContacts] = useState<Contact[]>([])
 
   useEffect(() => {
     trackPageView("/admin")
+
+    // Load recent contacts from localStorage
+    const contacts = JSON.parse(localStorage.getItem("portfolio_contacts") || "[]")
+    setRecentContacts(contacts.slice(0, 5)) // Show only 5 most recent
   }, [])
 
   const stats = [
@@ -59,15 +80,44 @@ export default function AdminDashboard() {
     },
   ]
 
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "low":
+        return "bg-green-100 text-green-800 border-green-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const getSubjectLabel = (subject: string) => {
+    const labels: { [key: string]: string } = {
+      "job-opportunity": "Job Opportunity",
+      "freelance-project": "Freelance Project",
+      collaboration: "Collaboration",
+      consultation: "Consultation",
+      speaking: "Speaking Engagement",
+      "urgent-inquiry": "Urgent Inquiry",
+      other: "Other",
+    }
+    return labels[subject] || subject
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Admin Dashboard</h1>
-              <p className="text-slate-600">Welcome back, {user?.name}</p>
+            <div className="flex items-center gap-4">
+              <img src="/logo2.png" alt="Nishant Sinha" className="w-15 h-20 rounded-lg object-contain" />
+              <div>
+                <h1 className="text-2xl font-bold text-slate-800">Admin Dashboard</h1>
+                <p className="text-slate-600">Welcome back, {user?.name}</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -110,7 +160,7 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions & Recent Messages */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <Card className="bg-white shadow-sm">
             <CardHeader>
@@ -129,7 +179,7 @@ export default function AdminDashboard() {
               <Link to="/admin/contacts">
                 <Button variant="outline" className="w-full justify-start">
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  View Contact Messages
+                  View Contact Messages ({recentContacts.filter((c) => !c.read).length} unread)
                 </Button>
               </Link>
               <Link to="/admin/analytics">
@@ -143,30 +193,82 @@ export default function AdminDashboard() {
 
           <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Recent Messages
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {analytics.recentVisitors.slice(0, 5).map((visitor, index) => (
+                {recentContacts.map((contact) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
+                    key={contact.id}
+                    className={`p-4 rounded-lg border transition-all ${
+                      !contact.read ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"
+                    }`}
                   >
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">Page Visit: {visitor.page}</p>
-                      <p className="text-xs text-slate-500">
-                        {visitor.timestamp.toLocaleString()} • {visitor.ip}
-                      </p>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-slate-800">{contact.name}</h4>
+                          {!contact.read && (
+                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-600">{contact.email}</p>
+                        {contact.company && <p className="text-xs text-slate-500">{contact.company}</p>}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge className={`text-xs ${getPriorityColor(contact.priority)}`}>{contact.priority}</Badge>
+                        <div className="flex items-center text-xs text-slate-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {new Date(contact.timestamp).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      New
-                    </Badge>
+
+                    <div className="mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        {getSubjectLabel(contact.subject)}
+                      </Badge>
+                    </div>
+
+                    <p className="text-sm text-slate-700 line-clamp-2">{contact.message}</p>
+
+                    {contact.selectedTech && contact.selectedTech.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {contact.selectedTech.slice(0, 3).map((tech) => (
+                          <Badge key={tech} variant="secondary" className="text-xs">
+                            {tech}
+                          </Badge>
+                        ))}
+                        {contact.selectedTech.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{contact.selectedTech.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
-                {analytics.recentVisitors.length === 0 && (
-                  <p className="text-sm text-slate-500 text-center py-4">No recent activity</p>
+                {recentContacts.length === 0 && (
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-sm text-slate-500">No messages yet</p>
+                  </div>
                 )}
               </div>
+              {recentContacts.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <Link to="/admin/contacts">
+                    <Button variant="outline" size="sm" className="w-full">
+                      View All Messages
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

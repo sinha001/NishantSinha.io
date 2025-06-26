@@ -1,15 +1,15 @@
 import { PortfolioProvider } from "@/contexts/PortfolioContext"
 import { AnalyticsProvider } from "@/contexts/AnalyticsContext"
 import { AuthProvider } from "@/contexts/AuthContext"
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import Home from "@/pages/Home"
 import Blog from "@/pages/Blog"
-import AdminLogin from "./pages/admin/AdminLogin"
-import AdminDashboard from "./pages/admin/AdminDashboard"
-import AdminPortfolio from "./pages/admin/AdminPortfolio"
-import AdminContacts from "./pages/admin/AdminContacts"
-import AdminAnalytics from "./pages/admin/AdminAnalytics"
-import ProtectedRoute from "./components/ProtectedRoute"
+import AdminLogin from "@/pages/admin/AdminLogin"
+import AdminDashboard from "@/pages/admin/AdminDashboard"
+import AdminPortfolio from "@/pages/admin/AdminPortfolio"
+import AdminContacts from "@/pages/admin/AdminContacts"
+import AdminAnalytics from "@/pages/admin/AdminAnalytics"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 function App() {
   return (
@@ -23,6 +23,14 @@ function App() {
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route
                 path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
                 element={
                   <ProtectedRoute>
                     <AdminDashboard />
@@ -53,6 +61,8 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              {/* Catch all route - redirect to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Router>
         </AuthProvider>

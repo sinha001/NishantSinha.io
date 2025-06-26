@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react" 
+import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Send, CheckCircle, AlertCircle } from "lucide-react"
+import { useAnalytics } from "@/contexts/AnalyticsContext"
 
 export function ContactForm() {
+  const { trackContactSubmission } = useAnalytics()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle")
   const [message, setMessage] = useState("")
@@ -22,10 +24,59 @@ export function ContactForm() {
     role: "",
     subject: "",
     message: "",
+    selectedTech: [] as string[],
   })
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const toggleTech = (tech: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedTech: prev.selectedTech.includes(tech)
+        ? prev.selectedTech.filter((t) => t !== tech)
+        : [...prev.selectedTech, tech],
+    }))
+  }
+
+  const sendToMakeWebhook = async (data: any) => {
+    // Replace with your actual Make.com webhook URL
+    const MAKE_WEBHOOK_URL = "https://hook.us1.make.com/YOUR_WEBHOOK_ID_HERE"
+
+    try {
+      const response = await fetch(MAKE_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          company: data.company || "Not provided",
+          role: data.role || "Not specified",
+          subject: data.subject,
+          message: data.message,
+          selectedTech: data.selectedTech.join(", ") || "None selected",
+          timestamp: new Date().toISOString(),
+          source: "Portfolio Website",
+          priority: data.subject.includes("urgent") ? "high" : "medium",
+          phone: "+91-9155943999", // Your contact number for reference
+          portfolioUrl: window.location.origin,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("Make.com webhook success:", result)
+      return { success: true }
+    } catch (error) {
+      console.error("Make.com webhook error:", error)
+      throw new Error("Failed to send email notification")
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,18 +96,28 @@ export function ContactForm() {
         throw new Error("Please enter a valid email address.")
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Send to Make.com webhook for email automation
+      console.log("Sending to Make.com webhook...")
+      await sendToMakeWebhook(formData)
+      console.log("Email sent successfully via Make.com")
 
-      // Here you would typically send the email using a service like:
-      // - EmailJS
-      // - Your own backend API
-      // - Third-party email service
+      // Save contact to localStorage for admin panel
+      const existingContacts = JSON.parse(localStorage.getItem("portfolio_contacts") || "[]")
+      const newContact = {
+        id: Date.now().toString(),
+        ...formData,
+        timestamp: new Date(),
+        status: "new",
+        priority: formData.subject.includes("urgent") || formData.subject.includes("Urgent") ? "high" : "medium",
+        read: false,
+      }
+      localStorage.setItem("portfolio_contacts", JSON.stringify([newContact, ...existingContacts]))
 
-      console.log("Contact form submission:", formData)
+      // Track analytics
+      trackContactSubmission()
 
       setSubmitStatus("success")
-      setMessage("Thank you for your message! I'll get back to you soon.")
+      setMessage("Thank you for your message! I'll get back to you within 24-48 hours.")
 
       // Reset form
       setFormData({
@@ -66,14 +127,31 @@ export function ContactForm() {
         role: "",
         subject: "",
         message: "",
+        selectedTech: [],
       })
     } catch (error) {
+      console.error("Contact form error:", error)
       setSubmitStatus("error")
       setMessage(error instanceof Error ? error.message : "Failed to send message. Please try again later.")
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const techOptions = [
+    "Vue.js",
+    "React.js",
+    "Node.js",
+    "Java",
+    "Python",
+    "MongoDB",
+    "MySQL",
+    "Make.com",
+    "API Integration",
+    "Automation",
+    "Full-Stack",
+    "WordPress",
+  ]
 
   return (
     <Card className="bg-white shadow-lg border-slate-200 h-full">
@@ -152,6 +230,7 @@ export function ContactForm() {
                 <SelectItem value="collaboration">Collaboration</SelectItem>
                 <SelectItem value="consultation">Consultation</SelectItem>
                 <SelectItem value="speaking">Speaking Engagement</SelectItem>
+                <SelectItem value="urgent-inquiry">Urgent Inquiry</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
@@ -173,24 +252,16 @@ export function ContactForm() {
           <div className="space-y-2">
             <Label>Interested Technologies (Optional)</Label>
             <div className="flex flex-wrap gap-2">
-              {[
-                "Vue.js",
-                "React.js",
-                "Node.js",
-                "Java",
-                "Python",
-                "MongoDB",
-                "MySQL",
-                "Make.com",
-                "API Integration",
-                "Automation",
-                "Full-Stack",
-                "WordPress",
-              ].map((tech) => (
+              {techOptions.map((tech) => (
                 <Badge
                   key={tech}
-                  variant="outline"
-                  className="cursor-pointer hover:bg-blue-50 hover:border-blue-300 text-xs"
+                  variant={formData.selectedTech.includes(tech) ? "default" : "outline"}
+                  className={`cursor-pointer transition-all ${
+                    formData.selectedTech.includes(tech)
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "hover:bg-blue-50 hover:border-blue-300"
+                  } text-xs`}
+                  onClick={() => toggleTech(tech)}
                 >
                   {tech}
                 </Badge>
@@ -236,7 +307,7 @@ export function ContactForm() {
           </Button>
 
           <p className="text-xs text-slate-500 text-center">
-            I typically respond within 24-48 hours. For urgent matters, feel free to call me directly.
+            I typically respond within 24-48 hours. For urgent matters, feel free to call me directly at +91-9155943999.
           </p>
         </form>
       </CardContent>

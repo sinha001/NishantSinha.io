@@ -110,8 +110,10 @@ export default function Home() {
         transition={{ duration: 0.6 }}
         className="flex items-center justify-between p-6 max-w-7xl mx-auto"
       >
-        <div className="text-2xl font-bold text-slate-800">{personalInfo.name}</div>
-
+        <div className="flex items-center gap-3">
+          <img src="/logo2.png" alt="Nishant Sinha" className="w-15 h-20 rounded-full" />
+          <div className="text-2xl font-bold text-slate-800">{personalInfo.name}</div>
+        </div>
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
           <button
