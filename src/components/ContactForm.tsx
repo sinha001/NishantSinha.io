@@ -42,7 +42,7 @@ export function ContactForm() {
 
   const sendToMakeWebhook = async (data: any) => {
     // Replace with your actual Make.com webhook URL
-    const MAKE_WEBHOOK_URL = "https://hook.us1.make.com/YOUR_WEBHOOK_ID_HERE"
+    const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/4cr1vqqm3fmasdtqoevvyygned2gjhvz"
 
     try {
       const response = await fetch(MAKE_WEBHOOK_URL, {

@@ -63,16 +63,6 @@ export default function AdminPortfolio() {
   const [localEducation, setLocalEducation] = useState(education)
   const [localCertifications, setLocalCertifications] = useState(certifications)
 
-  // GitHub and Blog data (stored in localStorage)
-  const [githubRepos, setGithubRepos] = useState<Repository[]>(() => {
-    const saved = localStorage.getItem("portfolio_github_repos")
-    return saved ? JSON.parse(saved) : []
-  })
-
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
-    const saved = localStorage.getItem("portfolio_blog_posts")
-    return saved ? JSON.parse(saved) : []
-  })
 
   const handleSave = async () => {
     setSaveStatus("saving")
@@ -84,10 +74,7 @@ export default function AdminPortfolio() {
       updateEducation(localEducation)
       updateCertifications(localCertifications)
 
-      // Save GitHub and Blog data
-      localStorage.setItem("portfolio_github_repos", JSON.stringify(githubRepos))
-      localStorage.setItem("portfolio_blog_posts", JSON.stringify(blogPosts))
-
+      
       await saveAllData()
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)
@@ -246,60 +233,12 @@ export default function AdminPortfolio() {
     )
   }
 
-  // GitHub functions
-  const addGithubRepo = () => {
-    const newRepo: Repository = {
-      id: `repo-${Date.now()}`,
-      name: "new-repository",
-      description: "Repository description",
-      stars: 0,
-      forks: 0,
-      language: "JavaScript",
-      color: "blue",
-      url: "",
-    }
-    setGithubRepos([...githubRepos, newRepo])
-  }
-
-  const removeGithubRepo = (id: string) => {
-    setGithubRepos(githubRepos.filter((repo) => repo.id !== id))
-  }
-
-  const updateGithubRepo = (id: string, field: string, value: any) => {
-    setGithubRepos(githubRepos.map((repo) => (repo.id === id ? { ...repo, [field]: value } : repo)))
-  }
-
-  // Blog functions
-  const addBlogPost = () => {
-    const newPost: BlogPost = {
-      title: "New Blog Post",
-      link: "",
-      pubDate: new Date().toISOString(),
-      description: "Blog post description",
-      content: "Blog post content",
-      categories: ["Category 1"],
-      author: localPersonalInfo.name,
-      thumbnail: "",
-    }
-    setBlogPosts([...blogPosts, newPost])
-  }
-
-  const removeBlogPost = (index: number) => {
-    setBlogPosts(blogPosts.filter((_, i) => i !== index))
-  }
-
-  const updateBlogPost = (index: number, field: string, value: any) => {
-    setBlogPosts(blogPosts.map((post, i) => (i === index ? { ...post, [field]: value } : post)))
-  }
-
   const tabs = [
     { id: "personal", label: "Personal Info" },
     { id: "experience", label: "Experience" },
     { id: "education", label: "Education" },
     { id: "projects", label: "Projects" },
     { id: "skills", label: "Skills" },
-    { id: "github", label: "GitHub" },
-    { id: "blog", label: "Blog" },
     { id: "resume", label: "Resume" },
   ]
 
@@ -897,181 +836,6 @@ export default function AdminPortfolio() {
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* GitHub Tab */}
-        {activeTab === "github" && (
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Github className="h-5 w-5" />
-                  GitHub Repositories
-                </CardTitle>
-                <Button onClick={addGithubRepo} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Repository
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {githubRepos.map((repo, index) => (
-                <Card key={repo.id} className="border border-slate-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Github className="h-5 w-5" />
-                        Repository {index + 1}
-                      </h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeGithubRepo(repo.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label>Repository Name</Label>
-                        <Input value={repo.name} onChange={(e) => updateGithubRepo(repo.id, "name", e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Repository URL</Label>
-                        <Input
-                          value={repo.url || ""}
-                          onChange={(e) => updateGithubRepo(repo.id, "url", e.target.value)}
-                          placeholder="https://github.com/..."
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <Label>Description</Label>
-                      <Textarea
-                        rows={2}
-                        value={repo.description}
-                        onChange={(e) => updateGithubRepo(repo.id, "description", e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Language</Label>
-                        <Input
-                          value={repo.language}
-                          onChange={(e) => updateGithubRepo(repo.id, "language", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                          <Star className="h-4 w-4" />
-                          Stars
-                        </Label>
-                        <Input
-                          type="number"
-                          value={repo.stars}
-                          onChange={(e) => updateGithubRepo(repo.id, "stars", Number.parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                          <GitFork className="h-4 w-4" />
-                          Forks
-                        </Label>
-                        <Input
-                          type="number"
-                          value={repo.forks}
-                          onChange={(e) => updateGithubRepo(repo.id, "forks", Number.parseInt(e.target.value) || 0)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Blog Tab */}
-        {activeTab === "blog" && (
-          <Card className="bg-white shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Blog Posts</CardTitle>
-                <Button onClick={addBlogPost} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Blog Post
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {blogPosts.map((post, index) => (
-                <Card key={index} className="border border-slate-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">Blog Post {index + 1}</h3>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeBlogPost(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div className="space-y-2">
-                        <Label>Title</Label>
-                        <Input value={post.title} onChange={(e) => updateBlogPost(index, "title", e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Link</Label>
-                        <Input
-                          value={post.link}
-                          onChange={(e) => updateBlogPost(index, "link", e.target.value)}
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2 mb-4">
-                      <Label>Description</Label>
-                      <Textarea
-                        rows={3}
-                        value={post.description}
-                        onChange={(e) => updateBlogPost(index, "description", e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Categories (comma separated)</Label>
-                        <Input
-                          value={post.categories.join(", ")}
-                          onChange={(e) =>
-                            updateBlogPost(
-                              index,
-                              "categories",
-                              e.target.value
-                                .split(",")
-                                .map((cat) => cat.trim())
-                                .filter(Boolean),
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Thumbnail URL</Label>
-                        <Input
-                          value={post.thumbnail || ""}
-                          onChange={(e) => updateBlogPost(index, "thumbnail", e.target.value)}
-                          placeholder="https://..."
-                        />
                       </div>
                     </div>
                   </CardContent>

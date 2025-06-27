@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,6 +18,9 @@ import {
   Building,
   GraduationCap,
   Download,
+  Eye,
+  Code,
+  Activity,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { motion, useInView } from "framer-motion"
@@ -26,6 +29,7 @@ import { MobileNav } from "@/components/MobileNav"
 import { useAnalytics } from "@/contexts/AnalyticsContext"
 import { usePortfolio } from "@/contexts/PortfolioContext"
 import { BackgroundBeams } from "@/components/ui/background-beams"
+import { githubService, type GitHubRepo, type GitHubStats } from "@/utils/githubApi"
 
 // Import static data that doesn't change via admin
 import { contactOptions } from "@/data/contact"
@@ -71,11 +75,31 @@ function AnimatedSection({ children, className = "" }: { children: React.ReactNo
 
 export default function Home() {
   const { trackPageView, trackResumeDownload } = useAnalytics()
-  const { personalInfo, experiences, projects, skillCategories, education, certifications, repositories, resumeFile } =
-    usePortfolio()
+  const { personalInfo, experiences, projects, skillCategories, education, certifications, resumeFile } = usePortfolio()
+
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([])
+  const [githubStats, setGithubStats] = useState<GitHubStats | null>(null)
+  const [githubLoading, setGithubLoading] = useState(true)
 
   useEffect(() => {
     trackPageView("/")
+  }, [])
+
+  useEffect(() => {
+    const fetchGitHubData = async () => {
+      try {
+        setGithubLoading(true)
+        const [repos, stats] = await Promise.all([githubService.getFeaturedRepositories(6), githubService.getStats()])
+        setGithubRepos(repos)
+        setGithubStats(stats)
+      } catch (error) {
+        console.error("Failed to fetch GitHub data:", error)
+      } finally {
+        setGithubLoading(false)
+      }
+    }
+
+    fetchGitHubData()
   }, [])
 
   const handleResumeDownload = () => {
@@ -111,7 +135,7 @@ export default function Home() {
         className="flex items-center justify-between p-6 max-w-7xl mx-auto"
       >
         <div className="flex items-center gap-3">
-          <img src="/logo2.png" alt="Nishant Sinha" className="w-15 h-20 rounded-full" />
+          <img src="/logo2.png" alt="Nishant Sinha" className="w-18 h-20 rounded-lg" />
           <div className="text-2xl font-bold text-slate-800">{personalInfo.name}</div>
         </div>
         {/* Desktop Navigation */}
@@ -570,38 +594,135 @@ export default function Home() {
               <p className="text-slate-600">My open source contributions and repositories</p>
             </div>
 
+            {/* GitHub Stats */}
+            {githubStats && !githubLoading && (
+              <motion.div variants={fadeInUp} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                <Card className="bg-white shadow-sm border-slate-200">
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">{githubStats.totalRepos}</div>
+                    <div className="text-sm text-slate-600 flex items-center justify-center gap-1">
+                      <Code className="h-3 w-3" />
+                      Repositories
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-sm border-slate-200">
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-yellow-600">{githubStats.totalStars}</div>
+                    <div className="text-sm text-slate-600 flex items-center justify-center gap-1">
+                      <Star className="h-3 w-3" />
+                      Stars
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-sm border-slate-200">
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">{githubStats.totalForks}</div>
+                    <div className="text-sm text-slate-600 flex items-center justify-center gap-1">
+                      <GitFork className="h-3 w-3" />
+                      Forks
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white shadow-sm border-slate-200">
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {Object.keys(githubStats.languages).length}
+                    </div>
+                    <div className="text-sm text-slate-600 flex items-center justify-center gap-1">
+                      <Activity className="h-3 w-3" />
+                      Languages
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Repository Grid */}
             <motion.div variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {repositories.map((repo) => (
-                <motion.div key={repo.id} variants={scaleIn}>
-                  <Card className="bg-white shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-slate-800">{repo.name}</h3>
-                        <Github className="h-5 w-5 text-slate-500" />
-                      </div>
-                      <p className="text-slate-600 text-sm mb-4">{repo.description}</p>
-                      <div className="flex items-center justify-between text-sm text-slate-500">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1">
-                            <Star className="h-4 w-4" />
-                            {repo.stars}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <GitFork className="h-4 w-4" />
-                            {repo.forks}
-                          </span>
+              {githubLoading
+                ? // Loading skeletons
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <Card key={index} className="bg-white shadow-sm border-slate-200">
+                      <CardContent className="p-6">
+                        <div className="animate-pulse">
+                          <div className="h-4 bg-slate-200 rounded mb-3"></div>
+                          <div className="h-3 bg-slate-200 rounded mb-4"></div>
+                          <div className="flex justify-between">
+                            <div className="h-3 bg-slate-200 rounded w-16"></div>
+                            <div className="h-3 bg-slate-200 rounded w-12"></div>
+                          </div>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={`bg-${repo.color}-50 text-${repo.color}-700 border-${repo.color}-200`}
-                        >
-                          {repo.language}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                : githubRepos.map((repo) => (
+                    <motion.div key={repo.id} variants={scaleIn}>
+                      <Card className="bg-white shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-slate-800 truncate">{repo.name}</h3>
+                            <div className="flex items-center gap-2">
+                              {repo.homepage && (
+                                <a
+                                  href={repo.homepage}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-slate-400 hover:text-blue-600"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </a>
+                              )}
+                              <a
+                                href={repo.html_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-slate-400 hover:text-slate-600"
+                              >
+                                <Github className="h-4 w-4" />
+                              </a>
+                            </div>
+                          </div>
+                          <p className="text-slate-600 text-sm mb-4 line-clamp-2">
+                            {repo.description || "No description available"}
+                          </p>
+
+                          {/* Topics */}
+                          {repo.topics && repo.topics.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-4">
+                              {repo.topics.slice(0, 3).map((topic) => (
+                                <Badge key={topic} variant="secondary" className="text-xs bg-slate-100 text-slate-600">
+                                  {topic}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between text-sm text-slate-500">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3" />
+                                {repo.stargazers_count}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <GitFork className="h-3 w-3" />
+                                {repo.forks_count}
+                              </span>
+                            </div>
+                            {repo.language && (
+                              <div className="flex items-center gap-1">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: githubService.getLanguageColor(repo.language) }}
+                                ></div>
+                                <span className="text-xs">{repo.language}</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
             </motion.div>
 
             <div className="text-center mt-12">
